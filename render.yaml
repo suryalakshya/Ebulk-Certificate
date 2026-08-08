@@ -1,0 +1,51 @@
+# Render Blueprint Specification
+# https://render.com/docs/blueprint-spec
+
+services:
+  # ============================================================
+  # 1. Combined Full-Stack Web Service (Backend + Frontend)
+  # ============================================================
+  - type: web
+    name: certificate-generator
+    env: python
+    region: singapore # Change to your preferred region (e.g. frankfurt, oregon, singapore, ohio)
+    plan: free
+    buildCommand: ./render-build.sh
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: AUTHORIZED_ADMIN_EMAIL
+        value: suryalbrcem9@gmail.com
+      - key: BREVO_FROM_EMAIL_1
+        value: suryalbrcem9@gmail.com
+      - key: BREVO_SMTP_USER_1
+        value: suryalbrcem9@gmail.com
+      - key: BREVO_SMTP_PASSWORD_1
+        sync: false # Set your Brevo API key in Render Dashboard
+      - key: BREVO_FROM_EMAIL_2
+        value: suryamaddipudi10@gmail.com
+      - key: BREVO_SMTP_USER_2
+        value: suryamaddipudi10@gmail.com
+      - key: BREVO_SMTP_PASSWORD_2
+        sync: false
+      - key: BREVO_FROM_EMAIL_3
+        value: communityservice202526@gmail.com
+      - key: BREVO_SMTP_USER_3
+        value: communityservice202526@gmail.com
+      - key: BREVO_SMTP_PASSWORD_3
+        sync: false
+      - key: BREVO_FROM_NAME
+        value: ACG Organizing Committee
+      - key: BREVO_SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: BREVO_SMTP_PORT
+        value: "587"
+      - key: MAX_EMAILS
+        value: "300"
+      - key: CERTIFICATE_WORKERS
+        value: "10"
+      - key: SMTP_WORKERS
+        value: "5"
+      - key: EMAIL_INTERVAL_SECONDS
+        value: "3.0"
+      - key: SEND_EMAIL
+        value: "True"

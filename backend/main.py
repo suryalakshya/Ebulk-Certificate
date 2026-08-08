@@ -876,8 +876,18 @@ def download_failed_csv():
     if not os.path.exists(failed_csv):
         raise HTTPException(status_code=404, detail="No failed emails report found.")
     return FileResponse(failed_csv, media_type="text/csv", filename="failed_emails.csv")
+# ============================================================
+# MOUNT STATIC FRONTEND BUILD (FOR SINGLE SERVICE RENDER DEPLOYMENT)
+# ============================================================
+
+from fastapi.staticfiles import StaticFiles
+
+frontend_dist = BASE_DIR.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
