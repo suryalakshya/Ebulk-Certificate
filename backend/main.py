@@ -149,22 +149,28 @@ def resolve_smtp_credentials(sender_email: str, fallback_user: str = "", fallbac
     e2 = os.getenv("BREVO_FROM_EMAIL_2", "suryamaddipudi10@gmail.com").strip().lower()
     e3 = os.getenv("BREVO_FROM_EMAIL_3", "communityservice202526@gmail.com").strip().lower()
 
+    global_password = (
+        os.getenv("BREVO_SMTP_PASSWORD", "")
+        or os.getenv("BREVO_API_KEY", "")
+        or fallback_password
+    ).strip().replace(" ", "")
+
     if sender == e1:
         u = os.getenv("BREVO_SMTP_USER_1", e1).strip()
         p = os.getenv("BREVO_SMTP_PASSWORD_1", "").strip().replace(" ", "")
-        return u, p or fallback_password or os.getenv("BREVO_SMTP_PASSWORD", "").strip().replace(" ", "")
+        return u, (p if p and not p.startswith("your_api_key") else global_password)
     elif sender == e2:
         u = os.getenv("BREVO_SMTP_USER_2", e2).strip()
         p = os.getenv("BREVO_SMTP_PASSWORD_2", "").strip().replace(" ", "")
-        return u, p or fallback_password or os.getenv("BREVO_SMTP_PASSWORD", "").strip().replace(" ", "")
+        return u, (p if p and not p.startswith("your_api_key") else global_password)
     elif sender == e3:
         u = os.getenv("BREVO_SMTP_USER_3", e3).strip()
         p = os.getenv("BREVO_SMTP_PASSWORD_3", "").strip().replace(" ", "")
-        return u, p or fallback_password or os.getenv("BREVO_SMTP_PASSWORD", "").strip().replace(" ", "")
+        return u, (p if p and not p.startswith("your_api_key") else global_password)
 
     u = fallback_user or os.getenv("BREVO_SMTP_USER", sender).strip()
     p = fallback_password or os.getenv("BREVO_SMTP_PASSWORD", "").strip().replace(" ", "")
-    return u, p
+    return u, (p if p and not p.startswith("your_api_key") else global_password)
 
 
 def read_csv_data(csv_path: str) -> list[dict[str, Any]]:
@@ -486,10 +492,16 @@ async def send_otp(req: SendOTPRequest):
             pass
         print(f"[AUTH] ✓ OTP email successfully sent to {email} via Brevo SMTP.")
     except Exception as err:
-        print(f"[AUTH ERROR] Failed to send OTP email via Brevo SMTP: {err}")
+        err_msg = str(err)
+        print(f"[AUTH ERROR] Failed to send OTP email via Brevo SMTP: {err_msg}")
+        if "535" in err_msg or "Authentication failed" in err_msg:
+            raise HTTPException(
+                status_code=500,
+                detail="Brevo SMTP Authentication Failed (535). Please add your valid Brevo SMTP Key under BREVO_SMTP_PASSWORD_1 in Render Dashboard > Environment.",
+            )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to send OTP email via Brevo SMTP: {err}. Please check your Brevo credentials in .env.",
+            detail=f"Failed to send OTP email via Brevo SMTP: {err_msg}. Please check your Brevo credentials.",
         )
 
     return {"message": f"OTP verification code sent to {email}. Please check your email inbox."}
