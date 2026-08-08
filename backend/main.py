@@ -68,7 +68,7 @@ app.add_middleware(
 
 class EmailConfig(BaseModel):
     brevo_smtp_host: str = os.getenv("BREVO_SMTP_HOST", "smtp-relay.brevo.com").strip()
-    brevo_smtp_port: int = int(os.getenv("BREVO_SMTP_PORT", "587").strip())
+    brevo_smtp_port: int = int(os.getenv("BREVO_SMTP_PORT", "2525").strip())
     brevo_smtp_user: str = os.getenv("BREVO_SMTP_USER", "").strip()
     brevo_smtp_password: str = os.getenv("BREVO_SMTP_PASSWORD", "").strip().replace(" ", "")
     brevo_from_email: str = os.getenv("BREVO_FROM_EMAIL", "").strip()
@@ -286,12 +286,14 @@ class AsyncBrevoSMTP:
             config.brevo_smtp_user,
             config.brevo_smtp_password,
         )
+        is_ssl = (config.brevo_smtp_port == 465)
         self.smtp = SMTP(
             hostname=config.brevo_smtp_host,
             port=config.brevo_smtp_port,
             username=username,
             password=password,
-            start_tls=True,
+            use_tls=is_ssl,
+            start_tls=not is_ssl,
             timeout=30,
         )
         self.connected = False
@@ -476,12 +478,15 @@ async def send_otp(req: SendOTPRequest):
         msg.set_content(text_body)
         msg.add_alternative(html_body, subtype="html")
 
+        port = int(os.getenv("BREVO_SMTP_PORT", "2525").strip())
+        is_ssl = (port == 465)
         smtp = SMTP(
             hostname=os.getenv("BREVO_SMTP_HOST", "smtp-relay.brevo.com"),
-            port=int(os.getenv("BREVO_SMTP_PORT", "587")),
+            port=port,
             username=username,
             password=password,
-            start_tls=True,
+            use_tls=is_ssl,
+            start_tls=not is_ssl,
             timeout=15,
         )
         await smtp.connect()
@@ -693,6 +698,12 @@ async def run_full_generation_task(req: GenerateRequest):
     active_csv = get_active_csv_path()
 
     config = req.email_config or EmailConfig()
+    env_port = os.getenv("BREVO_SMTP_PORT")
+    if env_port:
+        try:
+            config.brevo_smtp_port = int(env_port.strip())
+        except Exception:
+            pass
     recipients = read_csv_data(active_csv)[:config.max_emails]
 
     for index, r in enumerate(recipients, start=1):

@@ -24,7 +24,7 @@ export default function App() {
   // Email Config state
   const [emailConfig, setEmailConfig] = useState({
     brevo_smtp_host: 'smtp-relay.brevo.com',
-    brevo_smtp_port: 587,
+    brevo_smtp_port: 2525,
     brevo_smtp_user: '',
     brevo_smtp_password: '',
     brevo_from_email: 'suryalbrcem9@gmail.com',
